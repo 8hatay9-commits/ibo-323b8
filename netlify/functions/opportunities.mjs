@@ -3,8 +3,18 @@ import { json } from './_core.mjs';
 
 export default async () => {
   try {
-    const latest = await getStore('flashbot-state').get('latest-scan', { type: 'json', consistency: 'strong' });
-    if (!latest) return json({ ok: false, error: 'NO_SCAN_YET', signingEnabled: false, broadcastEnabled: false }, 404);
+    const latest = await getStore('flashbot-state').get('latest-scan', {
+      type: 'json',
+      consistency: 'strong'
+    });
+    if (!latest) {
+      return json({
+        ok: false,
+        error: 'NO_SCAN_YET',
+        signingEnabled: false,
+        broadcastEnabled: false
+      }, 404);
+    }
     return json({
       ok: true,
       chain: latest.chain,
@@ -20,6 +30,15 @@ export default async () => {
       broadcastEnabled: false
     });
   } catch (e) {
-    return json({ ok: false, error: String(e?.message || e), signingEnabled: false, broadcastEnabled: false }, 502);
+    return json({
+      ok: false,
+      error: String(e?.message || e),
+      signingEnabled: false,
+      broadcastEnabled: false
+    }, 502);
   }
+};
+
+export const config = {
+  path: '/api/opportunities'
 };
