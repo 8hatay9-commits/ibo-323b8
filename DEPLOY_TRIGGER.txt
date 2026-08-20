@@ -1,0 +1,6 @@
+Force Netlify deploy from ChatGPT session.
+Target: Base/Aave read-only cloud scanner
+Expected endpoints: /api/health, /api/scan, /api/opportunities
+Signing: disabled
+Broadcast: disabled
+Triggered: 2026-08-20
