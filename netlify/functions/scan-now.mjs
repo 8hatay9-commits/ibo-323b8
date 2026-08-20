@@ -9,6 +9,16 @@ export default async (req) => {
     await getStore('flashbot-state').setJSON('latest-scan', result);
     return json(result);
   } catch (e) {
-    return json({ ok: false, error: String(e?.message || e), signingEnabled: false, broadcastEnabled: false, observedAt: new Date().toISOString() }, 502);
+    return json({
+      ok: false,
+      error: String(e?.message || e),
+      signingEnabled: false,
+      broadcastEnabled: false,
+      observedAt: new Date().toISOString()
+    }, 502);
   }
+};
+
+export const config = {
+  path: '/api/scan'
 };
