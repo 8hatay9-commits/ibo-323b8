@@ -1,6 +1,1 @@
-Force Netlify deploy from ChatGPT session.
-Target: Base/Aave read-only cloud scanner
-Expected endpoints: /api/health, /api/scan, /api/opportunities
-Signing: disabled
-Broadcast: disabled
-Triggered: 2026-08-20
+Autonomous Base/Aave cycle hardening is being deployed from commit c621af35d101f92fa973bef50dd3a5a155550d2e.
