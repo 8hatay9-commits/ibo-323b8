@@ -7,21 +7,3 @@
 
 [functions."scheduled-scan"]
   schedule = "*/2 * * * *"
-
-[[redirects]]
-  from = "/api/health"
-  to = "/.netlify/functions/health"
-  status = 200
-  force = true
-
-[[redirects]]
-  from = "/api/scan"
-  to = "/.netlify/functions/scan-now"
-  status = 200
-  force = true
-
-[[redirects]]
-  from = "/api/opportunities"
-  to = "/.netlify/functions/opportunities"
-  status = 200
-  force = true
