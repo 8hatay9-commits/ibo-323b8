@@ -2,7 +2,8 @@ import { health, scan } from './_core.mjs';
 
 const CACHE_NAME = 'ibo-autonomous-proof';
 const STATE_KEY = 'https://ibo-state.local/autonomous/latest';
-const WITNESS_URL = 'https://jsonblob.io/7e5ccf4b-4fa7-4fe8-9db0-6f69bca6b301';
+const NTFY_URL = 'https://ntfy.sh/';
+const NTFY_TOPIC = 'ibo-base-aave-proof-84c72d61e51f4f1a9e6f2f0c7b8a91d3';
 
 async function writeState(data) {
   const cache = await caches.open(CACHE_NAME);
@@ -17,21 +18,49 @@ async function writeState(data) {
   await cache.put(STATE_KEY, response);
 }
 
-async function writeWitness(data) {
+async function publishWitness(data) {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), 5000);
   try {
-    const response = await fetch(WITNESS_URL, {
+    const compact = {
+      ok: data.ok,
+      event: data.event,
+      source: data.source,
+      witnessVersion: 2,
+      startedAt: data.startedAt,
+      failedAt: data.failedAt ?? null,
+      error: data.error ?? null,
+      healthObservedAt: data.healthObservedAt ?? null,
+      healthBlock: data.healthBlock ?? null,
+      healthChainId: data.healthChainId ?? null,
+      scanObservedAt: data.scanObservedAt ?? null,
+      scanHead: data.scanHead ?? null,
+      windowBlocks: data.windowBlocks ?? null,
+      borrowerCap: data.borrowerCap ?? null,
+      borrowLogCount: data.borrowLogCount ?? null,
+      uniqueBorrowers: data.uniqueBorrowers ?? null,
+      checked: data.checked ?? null,
+      liquidatableCount: data.liquidatableCount ?? null,
+      nearCount: data.nearCount ?? null,
+      lowestHealthFactor: data.lowestHealthFactor ?? null,
+      errors: data.errors ?? null,
+      signingEnabled: false,
+      broadcastEnabled: false
+    };
+    const response = await fetch(NTFY_URL, {
       method: 'POST',
-      headers: {
-        'content-type': 'application/json',
-        'accept': 'application/json'
-      },
-      body: JSON.stringify(data),
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({
+        topic: NTFY_TOPIC,
+        title: compact.ok ? 'NETLIFY_AAVE_CYCLE_OK' : 'NETLIFY_AAVE_CYCLE_ERROR',
+        message: JSON.stringify(compact),
+        priority: compact.ok ? 3 : 5,
+        tags: compact.ok ? ['white_check_mark'] : ['warning']
+      }),
       signal: controller.signal,
       cache: 'no-store'
     });
-    if (!response.ok) throw new Error(`WITNESS_HTTP_${response.status}`);
+    if (!response.ok) throw new Error(`NTFY_HTTP_${response.status}`);
     return true;
   } finally {
     clearTimeout(timer);
@@ -51,7 +80,7 @@ export default async () => {
       ok: true,
       event: 'autonomous_cycle_ok',
       source: 'NETLIFY_SCHEDULED_FUNCTION',
-      witnessVersion: 1,
+      witnessVersion: 2,
       startedAt,
       healthObservedAt: live.observedAt,
       healthBlock: live.blockNumber,
@@ -74,22 +103,29 @@ export default async () => {
       broadcastEnabled: false
     };
 
-    await writeState(proof);
     try {
-      await writeWitness(proof);
+      await writeState(proof);
+    } catch (stateError) {
+      proof.stateWriteError = String(stateError?.message || stateError);
+      console.error(JSON.stringify({ event: 'state_write_error', error: proof.stateWriteError }));
+    }
+
+    try {
+      await publishWitness(proof);
       proof.externalWitnessWritten = true;
     } catch (witnessError) {
       proof.externalWitnessWritten = false;
       proof.externalWitnessError = String(witnessError?.message || witnessError);
       console.error(JSON.stringify({ event: 'witness_write_error', error: proof.externalWitnessError }));
     }
+
     console.log(JSON.stringify(proof));
   } catch (e) {
     const failure = {
       ok: false,
       event: 'autonomous_cycle_error',
       source: 'NETLIFY_SCHEDULED_FUNCTION',
-      witnessVersion: 1,
+      witnessVersion: 2,
       startedAt,
       failedAt: new Date().toISOString(),
       error: String(e?.message || e),
@@ -99,7 +135,7 @@ export default async () => {
     try { await writeState(failure); } catch (stateError) {
       console.error(JSON.stringify({ event: 'state_write_error', error: String(stateError?.message || stateError) }));
     }
-    try { await writeWitness(failure); } catch (witnessError) {
+    try { await publishWitness(failure); } catch (witnessError) {
       console.error(JSON.stringify({ event: 'witness_write_error', error: String(witnessError?.message || witnessError) }));
     }
     console.error(JSON.stringify(failure));
