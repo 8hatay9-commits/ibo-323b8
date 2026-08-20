@@ -1,1 +1,1 @@
-Autonomous Base/Aave cycle hardening is being deployed from commit c621af35d101f92fa973bef50dd3a5a155550d2e.
+Autonomous scheduled proof release: 75decee7dd1dc29cfc3562baf4ee952b2dcbaf6d
