@@ -2,6 +2,7 @@ import { health, scan } from './_core.mjs';
 
 const CACHE_NAME = 'ibo-autonomous-proof';
 const STATE_KEY = 'https://ibo-state.local/autonomous/latest';
+const WITNESS_URL = 'https://jsonblob.io/7e5ccf4b-4fa7-4fe8-9db0-6f69bca6b301';
 
 async function writeState(data) {
   const cache = await caches.open(CACHE_NAME);
@@ -16,6 +17,27 @@ async function writeState(data) {
   await cache.put(STATE_KEY, response);
 }
 
+async function writeWitness(data) {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), 5000);
+  try {
+    const response = await fetch(WITNESS_URL, {
+      method: 'POST',
+      headers: {
+        'content-type': 'application/json',
+        'accept': 'application/json'
+      },
+      body: JSON.stringify(data),
+      signal: controller.signal,
+      cache: 'no-store'
+    });
+    if (!response.ok) throw new Error(`WITNESS_HTTP_${response.status}`);
+    return true;
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
 export default async () => {
   const startedAt = new Date().toISOString();
   try {
@@ -28,9 +50,12 @@ export default async () => {
     const proof = {
       ok: true,
       event: 'autonomous_cycle_ok',
+      source: 'NETLIFY_SCHEDULED_FUNCTION',
+      witnessVersion: 1,
       startedAt,
       healthObservedAt: live.observedAt,
       healthBlock: live.blockNumber,
+      healthChainId: live.chainId,
       scanObservedAt: result.observedAt,
       scanHead: result.head,
       windowBlocks: result.windowBlocks,
@@ -50,11 +75,21 @@ export default async () => {
     };
 
     await writeState(proof);
+    try {
+      await writeWitness(proof);
+      proof.externalWitnessWritten = true;
+    } catch (witnessError) {
+      proof.externalWitnessWritten = false;
+      proof.externalWitnessError = String(witnessError?.message || witnessError);
+      console.error(JSON.stringify({ event: 'witness_write_error', error: proof.externalWitnessError }));
+    }
     console.log(JSON.stringify(proof));
   } catch (e) {
     const failure = {
       ok: false,
       event: 'autonomous_cycle_error',
+      source: 'NETLIFY_SCHEDULED_FUNCTION',
+      witnessVersion: 1,
       startedAt,
       failedAt: new Date().toISOString(),
       error: String(e?.message || e),
@@ -63,6 +98,9 @@ export default async () => {
     };
     try { await writeState(failure); } catch (stateError) {
       console.error(JSON.stringify({ event: 'state_write_error', error: String(stateError?.message || stateError) }));
+    }
+    try { await writeWitness(failure); } catch (witnessError) {
+      console.error(JSON.stringify({ event: 'witness_write_error', error: String(witnessError?.message || witnessError) }));
     }
     console.error(JSON.stringify(failure));
     throw e;
