@@ -1,6 +1,6 @@
 # IBO Live Scanner — Persistent System State
 
-Updated: 2026-08-20 04:36 Europe/Istanbul
+Updated: 2026-08-20 04:38 Europe/Istanbul
 
 ## Goal
 Run a cloud-hosted, PC-free, read-only Base mainnet/Aave scanner with a live health endpoint, scheduled scans, and dashboard. No private keys, signing, or transaction broadcast until proof gates are satisfied.
@@ -8,7 +8,7 @@ Run a cloud-hosted, PC-free, read-only Base mainnet/Aave scanner with a live hea
 ## Production repository
 - Repository: `8hatay9-commits/ibo-323b8`
 - Branch: `main`
-- Production deploy commit: `6043d748b1b3a85095f87c63548c3f092c5d0cfb`
+- Production deploy commit proven published: `6043d748b1b3a85095f87c63548c3f092c5d0cfb`
 - Netlify production URL: `https://vocal-marzipan-46458c.netlify.app/`
 - Netlify immutable deploy URL: `https://6a8659b6d8f3370008f4214f--vocal-marzipan-46458c.netlify.app/`
 
@@ -19,6 +19,22 @@ Netlify reported a successful published production deployment for commit `6043d7
 - Total deployment duration: 14 seconds.
 - 5 functions deployed.
 - Previous `@netlify/otel@^7.0.1` dependency-install blocker was bypassed by removing the project npm dependency path.
+
+## Runtime proof captured
+At approximately 04:38 Europe/Istanbul, `/api/health` returned live JSON in the user's browser with:
+- `ok: true`
+- `mode: READ_ONLY_PROOF_FIRST`
+- `chain: base`
+- `chainId: 8453`
+- `blockNumber: 50200283`
+- `gasPriceWei: 6000000`
+- RPC latency: chain 43 ms, block 53 ms, gas 51 ms
+- RPC endpoint for chain/block/gas: `https://mainnet.base.org`
+- `signingEnabled: false`
+- `broadcastEnabled: false`
+- `observedAt: 2026-08-20T01:38:33.877Z`
+
+This proves production health endpoint + live Base mainnet RPC connectivity. It does NOT yet prove the Aave scan endpoints or recurring scheduled execution.
 
 ## Current runtime design
 - Node.js pinned to 20 LTS via `.nvmrc` and `netlify.toml`.
@@ -60,17 +76,17 @@ Scanner controls:
 - No signing or broadcast code.
 
 ## Production acceptance status
-Deployment itself: PASS.
-Runtime endpoint verification: PENDING.
+Deployment: PASS.
+`/api/health`: PASS.
+`/api/scan?blocks=300`: PENDING.
+`/api/opportunities`: PENDING.
+Scheduled recurring execution: PENDING.
 
-Required checks before calling the scanner fully LIVE:
-1. Fetch `/api/health` and require `ok:true`, `chainId:8453`, current advancing block, gas price, RPC latency, timestamp, `signingEnabled:false`, `broadcastEnabled:false`.
-2. Fetch `/api/scan?blocks=300` and require a valid Aave scan response.
-3. Fetch `/api/opportunities` and require a valid live Aave opportunity scan response.
-4. Confirm scheduled scan function executes again without manual invocation and produces a newer head/timestamp.
-5. Observe advancing Base blocks over at least 10 minutes before declaring runtime proof complete.
-
-At 04:36 the ChatGPT execution environment could not yet resolve the freshly-created Netlify hostname because its external DNS/cache layer returned a cache miss / temporary name-resolution failure. This is an environment verification limitation, not evidence that the successful Netlify deploy failed. Do not claim endpoint PASS until an actual endpoint response is captured.
+Remaining checks before calling the scanner fully LIVE:
+1. Fetch `/api/scan?blocks=300` and require a valid Aave scan response.
+2. Fetch `/api/opportunities` and require a valid live Aave opportunity scan response.
+3. Confirm scheduled scan function executes again without manual invocation and produces a newer head/timestamp.
+4. Observe advancing Base blocks over repeated runtime checks before declaring full runtime proof complete.
 
 ## Historical infrastructure incidents
 ### GitHub Actions
