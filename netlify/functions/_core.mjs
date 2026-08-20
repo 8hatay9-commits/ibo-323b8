@@ -129,8 +129,9 @@ export async function health() {
   };
 }
 
-export async function scan(windowBlocks = C.defaultWindow) {
+export async function scan(windowBlocks = C.defaultWindow, maxBorrowers = C.maxBorrowers) {
   const safeWindow = Math.max(120, Math.min(600, Number(windowBlocks) || C.defaultWindow));
+  const safeMaxBorrowers = Math.max(1, Math.min(C.maxBorrowers, Number(maxBorrowers) || C.maxBorrowers));
   const head = h2n((await rpc('eth_blockNumber')).result);
   const start = Math.max(0, head - safeWindow + 1);
   const logs = [];
@@ -156,7 +157,7 @@ export async function scan(windowBlocks = C.defaultWindow) {
 
   const borrowers = [...seen.entries()]
     .sort((a, b) => b[1] - a[1])
-    .slice(0, C.maxBorrowers)
+    .slice(0, safeMaxBorrowers)
     .map(([user, lastBorrowBlock]) => ({ user, lastBorrowBlock }));
 
   const states = await mapLimit(borrowers, C.concurrency, async x => {
@@ -179,6 +180,7 @@ export async function scan(windowBlocks = C.defaultWindow) {
     head,
     start,
     windowBlocks: safeWindow,
+    borrowerCap: safeMaxBorrowers,
     borrowLogCount: logs.length,
     uniqueBorrowers: borrowers.length,
     checked: states.length,
