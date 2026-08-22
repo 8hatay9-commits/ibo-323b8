@@ -1,2 +1,0 @@
-Force Netlify production redeploy after pinning Node.js 20 LTS.
-Timestamp: 2026-08-20T04:29:00+03:00

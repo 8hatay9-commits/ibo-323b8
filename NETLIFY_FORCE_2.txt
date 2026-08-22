@@ -1,4 +1,0 @@
-Force Netlify production deploy after OAuth and deploy-key connection.
-Expected: /api/health, /api/scan, /api/opportunities
-Mode: read-only
-Triggered: 2026-08-20
