@@ -1,0 +1,22 @@
+name: Base Flash Edge Probe
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  scan:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install probe dependencies
+        run: npm install --no-save viem solc
+      - name: Run read-only pending-state scan
+        run: node probe.mjs
