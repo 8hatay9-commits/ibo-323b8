@@ -6,6 +6,8 @@ on:
     paths:
       - 'probe.mjs'
       - '.github/workflows/base-flash-edge.yml'
+  issues:
+    types: [opened]
   workflow_dispatch:
 
 jobs:
