@@ -6,6 +6,9 @@ on:
     paths:
       - 'probe.mjs'
       - '.github/workflows/base-flash-edge.yml'
+  pull_request:
+    branches: [main]
+    types: [opened, synchronize, reopened]
   issues:
     types: [opened]
   workflow_dispatch:
@@ -15,7 +18,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     permissions:
-      contents: write
+      contents: read
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -24,18 +27,4 @@ jobs:
       - name: Install probe dependencies
         run: npm install --no-save viem solc
       - name: Run read-only pending-state scan
-        id: probe
-        continue-on-error: true
         run: node probe.mjs
-      - name: Persist result
-        if: always()
-        run: |
-          test -f result.json || echo '{"overallStatus":"NO_RESULT_FILE"}' > result.json
-          git config user.name 'base-flash-edge-bot'
-          git config user.email 'base-flash-edge-bot@users.noreply.github.com'
-          git add result.json
-          git commit -m 'Update Base Flash edge result' || true
-          git push
-      - name: Fail if probe failed
-        if: steps.probe.outcome == 'failure'
-        run: exit 1
